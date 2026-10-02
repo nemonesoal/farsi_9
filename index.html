@@ -1,1 +1,69 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آزمون فارسی نهم</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="logo"><i class="fas fa-graduation-cap"></i> سامانه آزمون فارسی نهم</div>
+        <div class="header-actions">
+            <a href="admin.html" class="header-btn"><i class="fas fa-lock"></i> پنل مدیریت</a>
+        </div>
+    </header>
 
+    <main class="container">
+        <div class="card">
+
+            <!-- صفحه ورود -->
+            <div id="loginScreen" class="login-screen">
+                <div class="icon-box"><i class="fas fa-user-graduate"></i></div>
+                <h2>ورود به آزمون</h2>
+                <p>اطلاعات خود را وارد کنید</p>
+
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> نام و نام خانوادگی</label>
+                    <input type="text" id="studentName" placeholder="علی محمدی" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-school"></i> کلاس</label>
+                    <input type="text" id="studentClass" placeholder="۹/۱" maxlength="20">
+                </div>
+                <button class="btn btn-primary btn-block" id="startBtn">
+                    <i class="fas fa-play"></i> شروع آزمون
+                </button>
+                <p style="margin-top:1rem; font-size:0.9rem; color:#64748b;">
+                    <i class="fas fa-info-circle"></i> برای مشاهده کارنامه قبلی،
+                    <a href="report.html" style="color:#2a5298;">اینجا کلیک کنید</a>
+                </p>
+            </div>
+
+            <!-- صفحه آزمون -->
+            <div id="examScreen" style="display:none;">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-pen-fancy"></i> آزمون فارسی نهم</div>
+                </div>
+                <div class="exam-info">
+                    <div class="student-info"><i class="fas fa-user-circle"></i> <span id="displayName"></span></div>
+                    <div class="timer" id="timer"><i class="fas fa-clock"></i> <span id="timerText">۲۰:۰۰</span></div>
+                </div>
+                <form id="quizForm">
+                    <div id="questionsBox"></div>
+                    <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+                        <i class="fas fa-check-circle"></i> ثبت نهایی
+                    </button>
+                </form>
+                <div class="result-box" id="resultBox"></div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="footer">© ۱۴۰۳ | سامانه آزمون آنلاین فارسی نهم</footer>
+    <script src="app.js"></script>
+</body>
+</html>
