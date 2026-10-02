@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل مدیریت</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="logo"><i class="fas fa-cogs"></i> پنل مدیریت</div>
+        <div class="header-actions">
+            <a href="index.html" class="header-btn"><i class="fas fa-home"></i> صفحه اصلی</a>
+            <button class="header-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- صفحه ورود -->
+        <div id="loginBox" class="card login-screen">
+            <div class="icon-box"><i class="fas fa-shield-alt"></i></div>
+            <h2>ورود مدیر</h2>
+            <p>رمز عبور را وارد کنید</p>
+            <div class="form-group">
+                <input type="password" id="adminPassword" placeholder="••••" maxlength="10" style="text-align:center; letter-spacing:8px; font-size:1.2rem;">
+            </div>
+            <p class="error-msg" id="loginError">رمز عبور اشتباه است!</p>
+            <button class="btn btn-primary btn-block" id="loginBtn"><i class="fas fa-sign-in-alt"></i> ورود</button>
+        </div>
+
+        <!-- پنل -->
+        <div id="panelBox" class="card" style="display:none;">
+            <div class="tabs">
+                <button class="tab active" data-tab="gradesTab"><i class="fas fa-chart-bar"></i> کارنامه‌ها</button>
+                <button class="tab" data-tab="questionsTab"><i class="fas fa-list"></i> سوالات</button>
+            </div>
+
+            <!-- تب کارنامه‌ها -->
+            <div class="tab-content active" id="gradesTab">
+                <div class="stats-grid" id="statsGrid"></div>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="🔍 جستجو بر اساس نام یا کلاس...">
+                    <button class="btn btn-danger" id="clearGradesBtn"><i class="fas fa-trash"></i> پاک کردن همه</button>
+                </div>
+                <div id="gradesList"></div>
+            </div>
+
+            <!-- تب سوالات -->
+            <div class="tab-content" id="questionsTab">
+                <div id="questionsList"></div>
+                <div class="add-question-form">
+                    <h4><i class="fas fa-plus-circle"></i> افزودن سوال</h4>
+                    <input type="text" id="newQText" placeholder="متن سوال...">
+                    <div class="options-grid">
+                        <input type="text" id="newO1" placeholder="گزینه ۱">
+                        <input type="text" id="newO2" placeholder="گزینه ۲">
+                        <input type="text" id="newO3" placeholder="گزینه ۳">
+                        <input type="text" id="newO4" placeholder="گزینه ۴">
+                    </div>
+                    <div class="correct-select">
+                        <label>پاسخ صحیح:</label>
+                        <select id="newCorrect">
+                            <option value="0">گزینه ۱</option>
+                            <option value="1">گزینه ۲</option>
+                            <option value="2">گزینه ۳</option>
+                            <option value="3">گزینه ۴</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success btn-block" id="addQBtn"><i class="fas fa-plus"></i> افزودن سوال</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="footer">© ۱۴۰۳ | پنل مدیریت</footer>
+
+    <script>
+        const API = '/api';
+        let adminPass = '';
+        let allGrades = [];
+        let allQuestions = [];
+
+        // ============ ورود ============
+        document.getElementById('loginBtn').onclick = async () => {
+            const pass = document.getElementById('adminPassword').value;
+            const r = await fetch(`${API}/admin/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pass })
+            });
+            if (r.ok) {
+                adminPass = pass;
+                sessionStorage.setItem('adminPass', pass);
+                showPanel();
+            } else {
+                document.getElementById('loginError').classList.add('show');
+            }
+        };
+
+        document.getElementById('adminPassword').addEventListener('keydown', e => {
+            if (e.key === 'Enter') document.getElementById('loginBtn').click();
+        });
+
+        document.getElementById('logoutBtn').onclick = () => {
+            sessionStorage.removeItem('adminPass');
+            location.reload();
+        };
+
+        // چک خودکار ورود
+        const saved = sessionStorage.getItem('adminPass');
+        if (saved) {
+            adminPass = saved;
+            showPanel();
+        }
+
+        function showPanel() {
+            document.getElementById('loginBox').style.display = 'none';
+            document.getElementById('panelBox').style.display = 'block';
+            loadGrades();
+            loadQuestions();
+        }
+
+        // ============ تب‌ها ============
+        document.querySelectorAll('.tab').forEach(t => {
+            t.onclick = () => {
+                document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+                t.classList.add('active');
+                document.getElementById(t.dataset.tab).classList.add('active');
+            };
+        });
+
+        // ============ بارگذاری کارنامه‌ها ============
+        async function loadGrades() {
+            const r = await fetch(`${API}/admin/grades`, {
+                headers: { 'x-admin-password': adminPass }
+            });
+            if (!r.ok) { alert('خطا در دریافت داده'); return; }
+            allGrades = await r.json();
+            renderGrades();
+        }
+
+        function renderGrades(filter = '') {
+            const grades = filter
+                ? allGrades.filter(g => g.name.includes(filter) || g.cls.includes(filter))
+                : allGrades;
+
+            // آمار
+            const statsEl = document.getElementById('statsGrid');
+            if (allGrades.length === 0) {
+                statsEl.innerHTML = '';
+                document.getElementById('gradesList').innerHTML = '<p class="empty-msg"><i class="fas fa-folder-open"></i>هنوز کارنامه‌ای ثبت نشده است</p>';
+                return;
+            }
+
+            const avg = (allGrades.reduce((s,g) => s + g.score, 0) / allGrades.length).toFixed(2);
+            const max = Math.max(...allGrades.map(g => g.score));
+            const min = Math.min(...allGrades.map(g => g.score));
+            const passed = allGrades.filter(g => g.score >= 10).length;
+
+            statsEl.innerHTML = `
+                <div class="stat-card"><div class="num">${toFa(allGrades.length)}</div><div class="label">شرکت‌کننده</div></div>
+                <div class="stat-card"><div class="num">${toFa(avg)}</div><div class="label">میانگین</div></div>
+                <div class="stat-card"><div class="num">${toFa(max)}</div><div class="label">بالاترین</div></div>
+                <div class="stat-card"><div class="num">${toFa(min)}</div><div class="label">پایین‌ترین</div></div>
+                <div class="stat-card"><div class="num">${toFa(passed)}</div><div class="label">قبولی</div></div>
+            `;
+
+            if (grades.length === 0) {
+                document.getElementById('gradesList').innerHTML = '<p class="empty-msg">نتیجه‌ای یافت نشد</p>';
+                return;
+            }
+
+            let html = `<div class="table-wrapper"><table class="data-table"><thead><tr>
+                <th>#</th><th>نام</th><th>کلاس</th><th>نمره</th><th>درصد</th><th>تاریخ</th><th>عملیات</th>
+            </tr></thead><tbody>`;
+
+            grades.forEach((g, i) => {
+                const bc = g.percentage >= 90 ? 'excellent' : g.percentage >= 75 ? 'good' : g.percentage >= 50 ? 'average' : 'weak';
+                html += `<tr>
+                    <td>${toFa(i+1)}</td>
+                    <td><strong>${esc(g.name)}</strong></td>
+                    <td>${esc(g.cls)}</td>
+                    <td><span class="badge ${bc}">${toFa(g.score)}</span></td>
+                    <td>${toFa(g.percentage)}٪</td>
+                    <td style="font-size:0.8rem;">${new Date(g.date).toLocaleString('fa-IR')}</td>
+                    <td>
+                        <a href="report.html?id=${g.id}" target="_blank" class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
+                            <i class="fas fa-eye"></i> کارنامه
+                        </a>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            document.getElementById('gradesList').innerHTML = html;
+        }
+
+        document.getElementById('searchInput').oninput = function() {
+            renderGrades(this.value.trim());
+        };
+
+        document.getElementById('clearGradesBtn').onclick = async () => {
+            if (!confirm('⚠️ تمام کارنامه‌ها پاک شوند؟')) return;
+            if (!confirm('مطمئنید؟ این عمل بازگشت‌پذیر نیست!')) return;
+            await fetch(`${API}/admin/grades`, {
+                method: 'DELETE',
+                headers: { 'x-admin-password': adminPass }
+            });
+            loadGrades();
+        };
+
+        // ============ بارگذاری سوالات ============
+        async function loadQuestions() {
+            const r = await fetch(`${API}/admin/questions`, {
+                headers: { 'x-admin-password': adminPass }
+            });
+            allQuestions = await r.json();
+            renderQuestions();
+        }
+
+        function renderQuestions() {
+            if (allQuestions.length === 0) {
+                document.getElementById('questionsList').innerHTML = '<p class="empty-msg">سوالی وجود ندارد</p>';
+                return;
+            }
+            document.getElementById('questionsList').innerHTML = allQuestions.map((q, i) => `
+                <div class="admin-q-item">
+                    <p>${toFa(i+1)}. ${esc(q.text)}</p>
+                    <div class="options-list">
+                        ${q.options.map((o, oi) => `
+                            <span class="${oi === q.correct ? 'correct-answer' : ''}">
+                                ${toFa(oi+1)}. ${esc(o)} ${oi === q.correct ? '✓' : ''}
+                            </span>
+                        `).join('')}
+                    </div>
+                    <button class="delete-q-btn" onclick="delQ(${q.id})">
+                        <i class="fas fa-trash"></i> حذف
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.delQ = async (id) => {
+            if (!confirm('سوال حذف شود؟')) return;
+            await fetch(`${API}/admin/questions/${id}`, {
+                method: 'DELETE',
+                headers: { 'x-admin-password': adminPass }
+            });
+            loadQuestions();
+        };
+
+        document.getElementById('addQBtn').onclick = async () => {
+            const text = document.getElementById('newQText').value.trim();
+            const opts = ['newO1','newO2','newO3','newO4'].map(id => document.getElementById(id).value.trim());
+            const correct = parseInt(document.getElementById('newCorrect').value);
+
+            if (!text || opts.some(o => !o)) {
+                alert('همه فیلدها را پر کنید!');
+                return;
+            }
+
+            await fetch(`${API}/admin/questions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                body: JSON.stringify({ text, options: opts, correct })
+            });
+
+            ['newQText','newO1','newO2','newO3','newO4'].forEach(id => document.getElementById(id).value = '');
+            loadQuestions();
+        };
+
+        // ============ ابزارها ============
+        function toFa(n) {
+            return String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+        }
+        function esc(t) {
+            const d = document.createElement('div');
+            d.textContent = t;
+            return d.innerHTML;
+        }
+    </script>
+</body>
+</html>
